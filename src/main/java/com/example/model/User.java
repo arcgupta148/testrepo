@@ -5,12 +5,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-
+import java.util.Optional;
 
 //@Entity
 @Document(collection = "banking") // For MongoDB
 public class User {
-
+        // Constructor for convenience
+        // Default no-argument constructor (required for frameworks like MongoDB)
+    public User() {}
     private String id;
 
     @Column(unique = true, nullable = false)
@@ -35,7 +37,10 @@ public class User {
     private LocalDateTime updatedAt;
 
     // Getters and Setters
-
+    public User(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
     public String getId() {
         return id;
     }

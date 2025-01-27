@@ -38,8 +38,8 @@ public class UserController {
     public ResponseEntity<String> registerUser(@RequestBody UserDto userDto) {
         System.out.println("Register endpoint hit!");
         User user = convertDtoToEntity(userDto);
-        userService.register(user);
-        return ResponseEntity.ok("User registered successfully");
+        String message = userService.register(user);
+        return ResponseEntity.ok(message);
     }
 
      // Helper method to convert UserDto to User
