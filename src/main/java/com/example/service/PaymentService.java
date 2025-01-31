@@ -3,7 +3,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.*;
-import java.util.Optional;
+
 import com.example.util.JwtUtil;
 import com.example.model.User;
 import com.example.model.Payment;
@@ -11,6 +11,8 @@ import com.example.model.Transaction;
 import  com.example.repository.UserRepository;
 import com.example.repository.PaymentRepository;
 import com.example.repository.TransactionRepository;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.exception.InvalidCredentialsException;
 import com.example.dto.PaymentRequest;
 import java.time.*;
@@ -25,14 +27,14 @@ public class PaymentService{
     private final TransactionRepository transactionRepository;
     String status="";
         // Constructor injection (preferred)
-    public PaymentService(UserRepository userRepository, PaymentRepository paymentRepository,TransactionRepository transactionRepositor) {
+    public PaymentService(UserRepository userRepository, PaymentRepository paymentRepository,TransactionRepository transactionRepository) {
         this.userRepository = userRepository;
         this.paymentRepository = paymentRepository;
-        this.transactionRepository=transactionRepositor;
+        this.transactionRepository=transactionRepository;
     }
 
     //private final TransactionRepository transactionRepository;
-    // @Transactional
+     @Transactional
     public void processPayment(PaymentRequest paymentRequest){
         System.out.println("Payment request username is "+paymentRequest.getUsername() +" and the amount is "+paymentRequest.getAmount());
         if (paymentRequest == null || paymentRequest.getUsername() == null || paymentRequest.getAmount() == null) {
@@ -59,6 +61,40 @@ public class PaymentService{
         transaction.setAmount(paymentRequest.getAmount());
         transaction.setTimestamp(LocalDateTime.now());
         transactionRepository.save(transaction);
+    }
+
+    public void processRefunds(String transactionId){
+        Transaction origTransaction = transactionRepository.findById(transactionId).orElseThrow(()-> new RuntimeException("Transaction not found"));
+
+        //checking if the transaction is already refunded
+        if (origTransaction.getAmount()<0)
+            throw new RuntimeException("Refund has already been done");
+        
+        //Retrieve user account balance
+        Payment userPayments = paymentRepository.findBalanceByUsername(origTransaction.getUsername()).orElseThrow(() -> new RuntimeException("User not found"));
+        Double refundedamt = origTransaction.getAmount();
+        userPayments.setAmount(userPayments.getAmount()+refundedamt);
+        paymentRepository.save(userPayments);
+
+        // Create a refund transaction
+        Transaction refundTransaction = new Transaction();
+        refundTransaction.setUsername(origTransaction.getUsername());
+        refundTransaction.setAmount(-refundedamt); // Negative to indicate a refund
+        refundTransaction.setBalanceAfterTransaction(userPayments.getAmount());
+        refundTransaction.setTimestamp(LocalDateTime.now());
+        transactionRepository.save(refundTransaction);
+        
+        //return "Refund processed successfully for transaction ID: " + transactionId;
+
+
+    }
+
+    public List<Transaction> getTransactions(String username){
+        List<Transaction> transactionss = transactionRepository.findByUsername(username);
+        if (transactionss.isEmpty())
+            throw new RuntimeException("No transactions");
+        else
+            return transactionss;
     }
 
 }

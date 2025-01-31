@@ -1,21 +1,32 @@
 package com.example.model;
 import java.time.LocalDateTime;
-
+import java.util.UUID;
 import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "transaction") // For MongoDB
 public class Transaction{
+    private String transactionId;
     private String username;
     private Double amount;
     private Double balanceAfterTransaction;
     private LocalDateTime timestamp;
 
-    public  Transaction(){}
+    public  Transaction(){
+        this.transactionId = generateTransactionId();
+    }
+
+    public String gettransactionId(){
+        return transactionId;
+    }
+
+    public String generateTransactionId(){
+        return UUID.randomUUID().toString();
+    }
 
     public void setUsername(String username){
         this.username = username;
     }
     
-    public String getUsername(String username){
+    public String getUsername(){
         return username;
     }
 
